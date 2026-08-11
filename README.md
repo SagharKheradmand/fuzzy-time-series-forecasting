@@ -1,291 +1,174 @@
-# Fuzzy Time Series Forecasting
+# Fuzzy Time Series Forecasting from Scratch
 
-## Overview
+This repository implements first-order and high-order Fuzzy Time Series (FTS) forecasting models from scratch for a Fuzzy Sets and Systems course project. It forecasts one-step-ahead values for chaotic Mackey-Glass data and influenza specimen count series, compares model orders and fuzzy partition counts, and saves evaluation tables and visual results.
 
-This project presents an implementation of Fuzzy Time Series (FTS) models for one-step-ahead forecasting.
+The project is a machine learning / time series forecasting project focused on interpretable fuzzy-rule modeling rather than deep learning. It builds fuzzy sets, fuzzifies numeric time series values, derives Fuzzy Logical Relationship Groups (FLRGs), defuzzifies predictions, and evaluates each configuration with RMSE, MAE, and MAPE.
 
-The main objective is to study how fuzzy representations of numerical time-series data can be used for prediction. The project includes both First-Order and High-Order Fuzzy Time Series models and evaluates their performance using different model orders and numbers of fuzzy partitions.
+## Project Highlights
 
-Two datasets are used in the experiments:
+- Implements First-Order FTS (FOFTS) and High-Order FTS (HOFTS) without prebuilt fuzzy time-series libraries.
+- Supports triangular, trapezoidal, and Gaussian membership functions in the fuzzy partitioning module.
+- Runs a grid search across model orders and partition counts.
+- Evaluates four forecasting targets from two datasets.
+- Saves reproducible CSV result tables, RMSE heatmaps, membership-function plots, and prediction plots.
+- Includes a simple interactive CLI for entering historical values and predicting the next value with the selected best model.
 
-- Mackey-Glass chaotic time series
-- Influenza specimen count data
+## Problem Statement
 
-The implementation is built from scratch without using prebuilt fuzzy time-series libraries.
+The project predicts the next value in a time series using historical observations represented as fuzzy linguistic states. This is useful for studying forecasting problems where interpretable fuzzy rules are preferred over black-box models.
 
-## Main Features
+Input:
 
-- First-Order Fuzzy Time Series (FOFTS)
-- High-Order Fuzzy Time Series (HOFTS)
-- Triangular, trapezoidal, and Gaussian membership functions
-- Automatic fuzzy partition construction
-- Fuzzy Logical Relationship Groups (FLRGs)
-- One-step-ahead forecasting
-- Grid search over model orders and partition counts
-- Evaluation using RMSE, MAE, and MAPE
-- Prediction plots
-- RMSE heatmaps
-- Membership-function visualizations
-- Interactive prediction through a command-line interface
+- A univariate time series loaded from a CSV or Excel file.
+- Experiment parameters such as model order, number of fuzzy partitions, membership function type, and train/test split ratio.
 
-## Problem Description
+Output:
 
-The goal is to predict the next observation of a numerical time series using previous observations represented as fuzzy states.
-
-Instead of directly learning relationships between raw numerical values, the input data is divided into fuzzy intervals. Each numerical observation is then mapped to a fuzzy set, and relationships between consecutive fuzzy states are extracted from the training data.
-
-These relationships are used to estimate future fuzzy states and generate numerical forecasts through defuzzification.
-
-### Inputs
-
-The forecasting process uses:
-
-- A univariate numerical time series
-- Model order
-- Number of fuzzy partitions
-- Membership-function type
-- Train/test split ratio
-
-### Outputs
-
-The system produces:
-
-- One-step-ahead forecasts
-- RMSE, MAE, and MAPE values
-- Best model configuration
-- Grid-search result tables
-- Prediction plots
-- RMSE heatmaps
-- Membership-function plots
+- One-step-ahead test predictions.
+- Error metrics for each configuration.
+- Best configuration selected by lowest RMSE.
+- Visualizations of fuzzy sets, prediction curves, and RMSE across the parameter grid.
 
 ## Datasets
 
-### Mackey-Glass Dataset
-
-The Mackey-Glass dataset is a chaotic numerical time series commonly used for evaluating forecasting methods.
+### Mackey-Glass Time Series
 
 | Item | Description |
 | --- | --- |
-| File | `mackey_glass.csv` |
-| Type | Chaotic numerical time series |
-| Number of rows | 1,000 |
-| Number of columns | 2 |
+| Repository file | `mackey_glass.csv` |
+| Dataset type | Numeric chaotic time series |
+| Source in project files | Local CSV file |
+| External reference | Mackey-Glass systems are widely used as chaotic forecasting benchmarks. See the original paper reference: [Mackey and Glass, 1977](https://doi.org/10.1126/science.267326). |
+| Shape | 1,000 rows, 2 columns |
 | Columns | `index`, `value` |
 | Forecast target | `value` |
-| Missing values | None |
-| Format | CSV |
+| Missing values | None found in the current file |
+| Input format | CSV |
+| Output format | Forecasted numeric values and metric/plot files in `outputs/` |
 
-The `value` column is extracted and converted to floating-point values before training.
+Preprocessing:
 
-No additional normalization or missing-value processing is required for the current dataset.
+- `data.py` reads the CSV with `pandas.read_csv`.
+- The loader validates that the `value` column exists.
+- The `value` column is converted to `float` and used as the time series.
+- No missing-value handling is applied because no missing values were found in the current file.
 
 ### Influenza Specimens Dataset
 
-The second dataset contains weekly influenza specimen information.
-
 | Item | Description |
 | --- | --- |
-| File | `Specimens-Train.xlsx` |
-| Type | Weekly influenza specimen data |
+| Repository file | `Specimens-Train.xlsx` |
+| Dataset type | Weekly influenza/specimen count table |
+| Dataset source | Not specified in the current project files. |
 | Excel sheet | `Speciment` |
-| Number of rows | 238 |
-| Number of columns | 8 |
-| Format | Excel |
-| Missing values | None |
+| Shape | 238 rows, 8 columns |
+| Columns | `YEAR`, `WEEK`, `TOTAL SPECIMENS`, `TOTAL A`, `TOTAL B`, `PERCENT POSITIVE`, `PERCENT A`, `PERCENT B` |
+| Forecast targets | `TOTAL SPECIMENS`, `TOTAL A`, `TOTAL B` |
+| Missing values | None found in the current file |
+| Input format | Excel `.xlsx` |
+| Output format | Forecasted numeric values and metric/plot files in `outputs/` |
 
-The available columns are:
+Preprocessing:
 
-- `YEAR`
-- `WEEK`
-- `TOTAL SPECIMENS`
-- `TOTAL A`
-- `TOTAL B`
-- `PERCENT POSITIVE`
-- `PERCENT A`
-- `PERCENT B`
+- `data.py` reads the workbook with `pandas.read_excel(path, header=1)`.
+- Column names are stripped of leading/trailing whitespace.
+- The loader validates the required columns: `YEAR`, `WEEK`, `TOTAL SPECIMENS`, `TOTAL A`, and `TOTAL B`.
+- Each selected target column is converted to a float time series.
+- No normalization, scaling, encoding, or augmentation is applied in the current code.
 
-The following three series are used as forecasting targets:
+## Methodology
 
-- `TOTAL SPECIMENS`
-- `TOTAL A`
-- `TOTAL B`
+The workflow is defined across `main.py`, `data.py`, `fuzzy_sets.py`, `fts_model.py`, `experiments.py`, `metrics.py`, and `visualize.py`.
 
-Each target is treated as an independent univariate time series.
+1. Load each dataset.
+2. Extract one or more target time series.
+3. Split each series chronologically using an 80% training ratio and a 20% test segment.
+4. Build an expanded universe of discourse from the training values using 5% padding.
+5. Partition the universe into equal-width fuzzy intervals.
+6. Create membership functions. The default experiment uses triangular membership functions.
+7. Fuzzify each training value by assigning it to the fuzzy set with maximum membership.
+8. Build FLRG rules:
+   - Order 1: `(F(t-1)) -> F(t)`
+   - Higher order: `(F(t-k), ..., F(t-1)) -> F(t)`
+9. Forecast the test segment using one-step-ahead rolling prediction with true historical values.
+10. Defuzzify consequent fuzzy sets by averaging their interval midpoints.
+11. Use the training global mean as the default fallback for unseen antecedents.
+12. Evaluate each configuration with RMSE, MAE, and MAPE.
+13. Select the best configuration by lowest RMSE.
+14. Save grid results and plots.
 
-## Forecasting Pipeline
-
-The complete forecasting procedure consists of the following steps:
-
-1. Load the selected dataset.
-2. Extract the target time series.
-3. Divide the observations chronologically into training and testing sets.
-4. Determine the universe of discourse from the training data.
-5. Expand the universe using a small padding value.
-6. Divide the universe into equal-width fuzzy intervals.
-7. Construct the membership functions.
-8. Convert numerical observations into fuzzy states.
-9. Generate Fuzzy Logical Relationships.
-10. Group the relationships into FLRGs.
-11. Perform one-step-ahead forecasting on the test data.
-12. Convert predicted fuzzy states back to numerical values.
-13. Calculate forecasting errors.
-14. Repeat the experiment for different parameter combinations.
-15. Select the configuration with the lowest RMSE.
-
-## Fuzzy Partitioning
-
-The universe of discourse is constructed from the minimum and maximum values of the training series.
-
-A padding of 5% is added to the range before constructing the fuzzy partitions.
-
-The implementation supports three membership-function types:
-
-- Triangular
-- Trapezoidal
-- Gaussian
-
-The default experiments use triangular membership functions.
-
-During fuzzification, each numerical observation is assigned to the fuzzy set with the highest membership value.
-
-## First-Order Fuzzy Time Series
-
-In the First-Order FTS model, the next fuzzy state is estimated using only the immediately preceding fuzzy state.
-
-The relationship can be represented as:
-
-`F(t-1) -> F(t)`
-
-The relationships observed in the training data are grouped into Fuzzy Logical Relationship Groups.
-
-These groups are then used to forecast the next fuzzy state.
-
-## High-Order Fuzzy Time Series
-
-The High-Order FTS model uses multiple previous fuzzy states instead of only one.
-
-For a model of order `k`, the relationship can be represented as:
-
-`(F(t-k), ..., F(t-1)) -> F(t)`
-
-This allows the forecasting model to incorporate a longer history of the time series.
-
-## Defuzzification
-
-After a fuzzy state is predicted, it must be converted back into a numerical value.
-
-The implementation uses the midpoint values of the consequent fuzzy intervals.
-
-When multiple consequent fuzzy sets are available, their midpoint values are averaged to produce the final prediction.
-
-For antecedent patterns that were not observed during training, the global mean of the training series is used as the fallback prediction.
-
-## Experimental Setup
-
-The experiments evaluate several combinations of model order and fuzzy partition count.
+Default experiment settings from `main.py`:
 
 | Parameter | Value |
 | --- | --- |
-| Train/Test Split | 80% / 20% |
-| Model Orders | 1, 2, 3, 4, 5 |
-| Number of Partitions | 5, 7, 9, 11, 13, 15 |
-| Default Membership Function | Triangular |
-| Universe Padding | 0.05 |
-| Model Selection Metric | RMSE |
-| Fallback Strategy | Training global mean |
-
-A grid search is performed over all combinations of model order and partition count.
-
-The configuration with the lowest RMSE is selected as the best model for each target series.
-
-## Evaluation Metrics
-
-Three metrics are used to evaluate forecasting performance.
-
-### RMSE
-
-Root Mean Squared Error gives greater weight to larger forecasting errors and is used as the main criterion for selecting the best model.
-
-### MAE
-
-Mean Absolute Error represents the average absolute difference between the actual and predicted values.
-
-### MAPE
-
-Mean Absolute Percentage Error measures the forecasting error as a percentage of the actual observations.
-
-MAPE should be interpreted carefully when actual values are close to zero because the percentage error can become very large.
+| Train/test split | 80% / 20% |
+| Model orders | 1, 2, 3, 4, 5 |
+| Partition counts | 5, 7, 9, 11, 13, 15 |
+| Membership function | Triangular |
+| Universe padding | 0.05 |
+| Fallback strategy | Training global mean |
 
 ## Results
 
-The best configurations obtained from the saved grid-search results are shown below.
+The repository includes generated result files in `outputs/`. The best saved configurations are selected by the first row of each sorted grid-result CSV.
 
-| Series | Best Order | Best Partitions | RMSE | MAE | MAPE |
+| Series | Best order | Best partitions | RMSE | MAE | MAPE |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Mackey-Glass / `value` | 3 | 15 | 0.0538 | 0.0433 | 6.9028 |
-| Influenza / `TOTAL SPECIMENS` | 1 | 7 | 9281.4843 | 7586.1808 | 10.7146 |
-| Influenza / `TOTAL A` | 1 | 7 | 10285.1324 | 6584.2667 | 1056.4019 |
-| Influenza / `TOTAL B` | 1 | 11 | 405.0040 | 337.5056 | 254.6614 |
+| `mackey_glass / value` | 3 | 15 | 0.0538 | 0.0433 | 6.9028 |
+| `specimens / TOTAL SPECIMENS` | 1 | 7 | 9281.4843 | 7586.1808 | 10.7146 |
+| `specimens / TOTAL A` | 1 | 7 | 10285.1324 | 6584.2667 | 1056.4019 |
+| `specimens / TOTAL B` | 1 | 11 | 405.0040 | 337.5056 | 254.6614 |
 
-The Mackey-Glass series achieved its lowest saved RMSE using a third-order model with 15 fuzzy partitions.
-
-For the influenza data, the best saved configurations use first-order models, while the preferred number of partitions varies between the target series.
-
-The large MAPE values for some influenza targets are related to observations with small actual values, where percentage-based errors can become very large.
+High MAPE values for some influenza targets are present in the saved outputs. This can happen when actual values are small, because percentage error becomes very large when the denominator is near zero.
 
 ## Visual Results
 
-### Mackey-Glass Predictions
+### Mackey-Glass Forecasting
 
-![Mackey-Glass Predictions](outputs/mackey_glass__value__predictions.png)
+![Mackey-Glass predictions](outputs/mackey_glass__value__predictions.png)
 
-This plot compares the actual Mackey-Glass test observations with the forecasts generated by the selected FTS model.
+The prediction plot compares the true Mackey-Glass test values with the best saved FTS model predictions.
 
-### Mackey-Glass RMSE Heatmap
+![Mackey-Glass RMSE heatmap](outputs/mackey_glass__value__rmse_heatmap.png)
 
-![Mackey-Glass RMSE Heatmap](outputs/mackey_glass__value__rmse_heatmap.png)
+The heatmap shows RMSE across model orders and partition counts for the Mackey-Glass series.
 
-The heatmap compares RMSE values across different model orders and fuzzy partition counts.
+![Mackey-Glass membership functions](outputs/mackey_glass__value__membership.png)
 
-### Mackey-Glass Membership Functions
+The membership plot shows the triangular fuzzy sets used by the best Mackey-Glass model.
 
-![Mackey-Glass Membership Functions](outputs/mackey_glass__value__membership.png)
+### Influenza Specimens Forecasting
 
-This figure shows the fuzzy membership functions associated with the selected Mackey-Glass configuration.
+![Total specimens predictions](outputs/specimens__TOTAL_SPECIMENS__predictions.png)
 
-### Influenza - Total Specimens
+The plot compares true and predicted values for `TOTAL SPECIMENS`.
 
-![Total Specimens Predictions](outputs/specimens__TOTAL_SPECIMENS__predictions.png)
+![Total A predictions](outputs/specimens__TOTAL_A__predictions.png)
 
-The figure compares actual and predicted values for `TOTAL SPECIMENS`.
+The plot compares true and predicted values for `TOTAL A`.
 
-### Influenza - Total A
+![Total B predictions](outputs/specimens__TOTAL_B__predictions.png)
 
-![Total A Predictions](outputs/specimens__TOTAL_A__predictions.png)
+The plot compares true and predicted values for `TOTAL B`.
 
-The figure compares actual and predicted values for `TOTAL A`.
+![Total specimens RMSE heatmap](outputs/specimens__TOTAL_SPECIMENS__rmse_heatmap.png)
 
-### Influenza - Total B
+The heatmap shows how RMSE changes across order and partition settings for `TOTAL SPECIMENS`.
 
-![Total B Predictions](outputs/specimens__TOTAL_B__predictions.png)
+![Total A RMSE heatmap](outputs/specimens__TOTAL_A__rmse_heatmap.png)
 
-The figure compares actual and predicted values for `TOTAL B`.
+The heatmap shows how RMSE changes across order and partition settings for `TOTAL A`.
 
-### Influenza RMSE Heatmaps
+![Total B RMSE heatmap](outputs/specimens__TOTAL_B__rmse_heatmap.png)
 
-![Total Specimens RMSE Heatmap](outputs/specimens__TOTAL_SPECIMENS__rmse_heatmap.png)
+The heatmap shows how RMSE changes across order and partition settings for `TOTAL B`.
 
-![Total A RMSE Heatmap](outputs/specimens__TOTAL_A__rmse_heatmap.png)
-
-![Total B RMSE Heatmap](outputs/specimens__TOTAL_B__rmse_heatmap.png)
-
-These heatmaps show how forecasting performance changes with different combinations of model order and partition count.
+Additional membership-function plots are available in `outputs/` for all influenza targets.
 
 ## Project Structure
 
 ```text
-fuzzy-time-series-forecasting/
-|
+Project1/
 ├── README.md
 ├── requirements.txt
 ├── main.py
@@ -299,148 +182,129 @@ fuzzy-time-series-forecasting/
 ├── cli.py
 ├── mackey_glass.csv
 ├── Specimens-Train.xlsx
-└── outputs/
-    ├── mackey_glass__value__grid_results.csv
-    ├── mackey_glass__value__membership.png
-    ├── mackey_glass__value__predictions.png
-    ├── mackey_glass__value__rmse_heatmap.png
-    ├── specimens__TOTAL_SPECIMENS__grid_results.csv
-    ├── specimens__TOTAL_SPECIMENS__membership.png
-    ├── specimens__TOTAL_SPECIMENS__predictions.png
-    ├── specimens__TOTAL_SPECIMENS__rmse_heatmap.png
-    ├── specimens__TOTAL_A__grid_results.csv
-    ├── specimens__TOTAL_A__membership.png
-    ├── specimens__TOTAL_A__predictions.png
-    ├── specimens__TOTAL_A__rmse_heatmap.png
-    ├── specimens__TOTAL_B__grid_results.csv
-    ├── specimens__TOTAL_B__membership.png
-    ├── specimens__TOTAL_B__predictions.png
-    └── specimens__TOTAL_B__rmse_heatmap.png
+├── outputs/
+│   ├── mackey_glass__value__grid_results.csv
+│   ├── mackey_glass__value__membership.png
+│   ├── mackey_glass__value__predictions.png
+│   ├── mackey_glass__value__rmse_heatmap.png
+│   ├── specimens__TOTAL_SPECIMENS__grid_results.csv
+│   ├── specimens__TOTAL_SPECIMENS__membership.png
+│   ├── specimens__TOTAL_SPECIMENS__predictions.png
+│   ├── specimens__TOTAL_SPECIMENS__rmse_heatmap.png
+│   ├── specimens__TOTAL_A__grid_results.csv
+│   ├── specimens__TOTAL_A__membership.png
+│   ├── specimens__TOTAL_A__predictions.png
+│   ├── specimens__TOTAL_A__rmse_heatmap.png
+│   ├── specimens__TOTAL_B__grid_results.csv
+│   ├── specimens__TOTAL_B__membership.png
+│   ├── specimens__TOTAL_B__predictions.png
+│   └── specimens__TOTAL_B__rmse_heatmap.png
+├── Fuzzy-1404-1-Prj1.pdf
+├── Fuzzy-Project1-Doc.pdf
+├── Fuzzy-Project1-Doc.docx
+└── Mehdi_Mortazavian_40435074.zip
 ```
 
-## File Description
+Important files:
 
-| File | Description |
-| --- | --- |
-| `main.py` | Runs the complete forecasting and evaluation pipeline |
-| `config.py` | Contains dataset and experiment configuration |
-| `data.py` | Loads datasets and extracts the required time series |
-| `fuzzy_sets.py` | Implements fuzzy partitions, membership functions, and fuzzification |
-| `fts_model.py` | Implements FTS training, FLRG construction, defuzzification, and forecasting |
-| `experiments.py` | Performs experiments over different model orders and partition counts |
-| `metrics.py` | Calculates RMSE, MAE, and MAPE |
-| `visualize.py` | Generates prediction plots, membership plots, and RMSE heatmaps |
-| `cli.py` | Provides an interactive interface for forecasting with the selected model |
-| `requirements.txt` | Lists the required Python packages |
-| `outputs/` | Contains generated results and visualizations |
+- `main.py`: Entry point that loads datasets, runs experiments, saves results, generates plots, and optionally starts the interactive predictor.
+- `config.py`: Dataclasses for dataset, experiment, and forecasting configuration.
+- `data.py`: Dataset loaders and time-series extraction utilities.
+- `fuzzy_sets.py`: Fuzzy set definitions, partition construction, membership functions, and fuzzification.
+- `fts_model.py`: FLRG construction, model fitting, defuzzification, and rolling forecasts.
+- `experiments.py`: Grid search over order and partition combinations.
+- `metrics.py`: RMSE, MAE, and MAPE calculations.
+- `visualize.py`: Prediction plots, membership-function plots, and RMSE heatmaps.
+- `cli.py`: Interactive command-line predictor for a fitted best model.
+- `outputs/`: Generated result tables and visualizations.
+- `Fuzzy-1404-1-Prj1.pdf`: Original assignment description.
+- `Fuzzy-Project1-Doc.pdf` and `Fuzzy-Project1-Doc.docx`: Project report files.
+- `Mehdi_Mortazavian_40435074.zip`: Submission archive containing source files, documentation, datasets, and outputs.
 
 ## Installation
 
-Create a Python virtual environment:
+Python version is not specified in the current project files. The local virtual environment in this repository uses Python 3.13, and the code uses standard modern Python syntax.
+
+Create and activate a virtual environment:
 
 ```bash
 python3 -m venv .venv
-```
-
-Activate it on macOS or Linux:
-
-```bash
 source .venv/bin/activate
 ```
 
-On Windows:
-
-```bash
-.venv\Scripts\activate
-```
-
-Install the required packages:
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Requirements
+Dependencies listed in `requirements.txt`:
 
-The project uses the following Python packages:
-
-- NumPy
-- Pandas
-- OpenPyXL
-- Matplotlib
+- `numpy`
+- `pandas`
+- `openpyxl`
+- `matplotlib`
 
 ## Usage
 
-Run the complete experiment pipeline with:
+Run the full experiment pipeline:
 
 ```bash
 python main.py
 ```
 
-The program processes each configured dataset and target series, evaluates the different FTS configurations, selects the best model, and saves the generated results in the `outputs/` directory.
-
-After processing each target series, the program asks:
+The script processes all configured datasets and target columns, writes outputs to `outputs/`, and prompts after each target series:
 
 ```text
 Do you want to run the interactive predictor for this best model? (y/n)
 ```
 
-Enter `y` to use the interactive predictor or `n` to continue without it.
+Enter `n` to continue to the next series without opening the predictor. Enter `y` to start the interactive CLI for the current best model.
 
-An example of interactive input is:
+Interactive predictor input example:
 
 ```text
 history> [120, 125, 128]
 ```
 
-The number of historical observations must be at least equal to the order of the selected model.
+The list must contain at least as many historical values as the selected model order.
+
+To run without entering the interactive predictor for any series:
+
+```bash
+printf "n\nn\nn\nn\n" | python main.py
+```
 
 ## Generated Outputs
 
-For every forecasting target, the program generates:
+For each target series, the pipeline saves:
 
-- `*_grid_results.csv` - evaluation results for the tested configurations
-- `*_predictions.png` - actual versus predicted values
-- `*_rmse_heatmap.png` - RMSE across order and partition combinations
-- `*_membership.png` - membership functions for the selected configuration
+- `*_grid_results.csv`: Metrics for each order/partition configuration.
+- `*_rmse_heatmap.png`: RMSE comparison across the grid.
+- `*_membership.png`: Membership functions for the best model partition.
+- `*_predictions.png`: True vs. predicted test values for the best model.
 
-All generated files are stored in the `outputs/` directory.
+The output paths are generated by `main.py` and saved under `outputs/`.
 
-## Technologies and Concepts
+## Technologies Used
 
 - Python
 - NumPy
 - Pandas
-- Matplotlib
 - OpenPyXL
-- Fuzzy Logic
-- Fuzzy Sets
-- Fuzzy Time Series
-- First-Order FTS
-- High-Order FTS
-- Membership Functions
-- Fuzzy Logical Relationship Groups
-- Time Series Forecasting
-- Grid Search
-- Data Visualization
+- Matplotlib
+- CSV and Excel data files
+- Fuzzy Time Series modeling
+- Grid-search experimentation
 
-## Possible Improvements
+## Future Improvements
 
-Some possible extensions of this project include:
+- Add command-line arguments for dataset paths, orders, partitions, membership type, and fallback strategy.
+- Save best-model metadata as JSON for easier reproducibility.
+- Add automated tests for data loading, fuzzification, FLRG generation, and metric calculations.
+- Move source files into a `src/` package if the project grows beyond a course-project layout.
+- Add a license file before publishing if the intended license is known.
 
-- Adding more membership-function configurations to the experiments
-- Supporting additional time-series datasets
-- Adding command-line parameters for experiment configuration
-- Saving selected model configurations for later use
-- Comparing additional defuzzification strategies
-- Adding automated tests
-- Improving the interactive forecasting interface
+## License
 
-## Course Information
-
-**Course:** Fuzzy Sets and Systems  
-**University:** Shiraz University
-
-## Author
-
-Saghar Kheradmand
+Not specified in the current project files.
